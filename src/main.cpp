@@ -5,6 +5,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 #include "camera.hpp"
 #include "shader.hpp"
 #include "scene/city_scene.hpp"
@@ -25,6 +29,7 @@ namespace
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
+    bool isPaused = false;
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -68,6 +73,14 @@ int main()
         return -1;
     }
 
+    // Initialize ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
     glEnable(GL_DEPTH_TEST);
 
     const std::filesystem::path shaderRoot = std::filesystem::path(SHADER_DIR);
@@ -98,10 +111,19 @@ int main()
 
         processInput(window);
 
+        // Start ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         glClearColor(0.02f, 0.05f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        cityScene.update(deltaTime, currentFrame);
+        if (!isPaused)
+        {
+            cityScene.update(deltaTime, currentFrame);
+        }
+        
         const float aspect = static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), aspect, 0.1f, 200.0f);
         glm::mat4 view = camera.GetViewMatrix();
@@ -112,9 +134,39 @@ int main()
         skyboxShader.use();
         cityScene.renderSkybox(skyboxShader, view, projection);
 
+        // Render Pause UI
+        if (isPaused)
+        {
+            // Dim background
+            ImGui::SetNextWindowPos(ImVec2(0, 0));
+            ImGui::SetNextWindowSize(io.DisplaySize);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f)); // Semi-transparent black
+            ImGui::Begin("PauseOverlay", nullptr, 
+                ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | 
+                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | 
+                ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration);
+            
+            auto text = "PAUSED";
+            ImGui::SetWindowFontScale(3.0f);
+            auto textSize = ImGui::CalcTextSize(text);
+            ImGui::SetCursorPos(ImVec2((io.DisplaySize.x - textSize.x) * 0.5f, (io.DisplaySize.y - textSize.y) * 0.5f));
+            ImGui::Text("%s", text);
+            
+            ImGui::End();
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    // Cleanup ImGui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     cityScene.shutdown();
 
@@ -124,8 +176,40 @@ int main()
 
 void processInput(GLFWwindow *window)
 {
+    static bool escPressedLastFrame = false;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+    {
+        if (!escPressedLastFrame)
+        {
+            isPaused = !isPaused;
+            if (isPaused)
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                firstMouse = true;
+            }
+        }
+        escPressedLastFrame = true;
+    }
+    else
+    {
+        escPressedLastFrame = false;
+    }
+
+    if (isPaused)
+    {
+        // Resume on click
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+        {
+            isPaused = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            firstMouse = true;
+        }
+        return; // Skip camera controls if paused
+    }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -159,6 +243,8 @@ void framebuffer_size_callback(GLFWwindow * /*window*/, int width, int height)
 
 void mouse_callback(GLFWwindow * /*window*/, double xpos, double ypos)
 {
+    if (isPaused) return;
+
     if (firstMouse)
     {
         lastX = static_cast<float>(xpos);
