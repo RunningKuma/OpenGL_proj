@@ -1,9 +1,10 @@
 #pragma once
 
-#include <glad/glad.h>
-#include <glm/glm.hpp>
+#include <memory>
 
 #include "shader.hpp"
+#include "simple_mesh.hpp"
+#include "skybox.hpp"
 
 class CityScene
 {
@@ -15,17 +16,15 @@ public:
     void shutdown();
 
 private:
-    unsigned int VAO = 0;
-    unsigned int VBO = 0;
-    unsigned int roadVAO = 0;
-    unsigned int roadVBO = 0;
-    unsigned int paveVAO = 0;
-    unsigned int paveVBO = 0;
-    unsigned int skyboxVAO = 0;
-    unsigned int skyboxVBO = 0;
-    unsigned int texture = 0;
+    std::unique_ptr<SimpleMesh> cubeMesh;
+    std::unique_ptr<SimpleMesh> roadMesh;
+    std::unique_ptr<SimpleMesh> paveMesh;
+
+    std::unique_ptr<Skybox> skybox;
+
+    unsigned int cubeTexture = 0;
     unsigned int roadTexture = 0;
     unsigned int paveTexture = 0;
-    unsigned int skyboxTexture = 0;
+
     float spin = 0.0f;
 };

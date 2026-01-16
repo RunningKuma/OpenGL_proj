@@ -27,6 +27,9 @@ add_executable(LearningOpenGL
     src/main.cpp
     src/glad.c
     src/scene/city_scene.cpp
+    src/scene/simple_mesh.cpp
+    src/scene/skybox.cpp
+    src/resources/texture.cpp
     vendor/imgui/imgui.cpp
     vendor/imgui/imgui_demo.cpp
     vendor/imgui/imgui_draw.cpp

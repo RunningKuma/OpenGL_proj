@@ -11,12 +11,18 @@ This project is a C++17 OpenGL application using CMake. It renders a 3D city sce
 ### Directory Structure & Separation of Concerns
 - **`src/`**: Contains application logic and scene implementations.
     - **`main.cpp`**: Handles GLFW initialization, input loop, and main render loop. Avoid adding heavy scene logic here.
-    - **`scene/`**: Contains `CityScene` and other scene-specific implementations. Scenes encapsulate their own geometry (VAOs/VBOs), textures, and render passes.
+    - **`resources/`**: Utility implementations (e.g., proper texture loading wrappers in `texture.hpp/cpp`).
+    - **`scene/`**: Contains scene logic and components.
+        - **`CityScene`**: High-level scene composition (lights, camera, object instantiation).
+        - **`SimpleMesh`**: Reusable class for managing geometry (VAOs/VBOs) and layout. Use this for adding new objects.
+        - **`Skybox`**: Encapsulates skybox rendering logic.
 - **`include/`**: Reusable utility classes (e.g., `Shader`, `Camera`).
 - **`shader/`**: GLSL source files. Maintained separately from C++ code.
 - **`resource/`**: Assets like textures and HDRIs.
 
 ### Resource Loading Pattern
+- **Texture Loading**: Use `src/resources/texture.hpp`. It wraps `stb_image` and handles OpenGL texture parameters and mipmaps.
+    - **Critical**: `STB_IMAGE_IMPLEMENTATION` is defined in `src/resources/texture.cpp`. **DO NOT** define it again in any other file to avoid linker errors.
 - **Path Resolution**: Use `std::filesystem::path` for all file I/O.
 - **Macros**: Do not hardcode absolute paths. Use CMake-injected preprocessor definitions:
     - `SHADER_DIR`: Absolute path to `shader/` directory.
@@ -38,7 +44,8 @@ This project is a C++17 OpenGL application using CMake. It renders a 3D city sce
 4. **Swap**: `glfwSwapBuffers`.
 
 ### Modern OpenGL Practices
-- **Strict Core Profile**: Do not use immediate mode (`glBegin`/`glEnd`). ALWAYS use VAOs and VBOs.
+- **Strict Core Profile**: Do not use immediate mode (`glBegin`/`glEnd`).
+- **Geometry Management**: Use the `SimpleMesh` class for creating and rendering geometry. It handles VAO/VBO creation and destruction (RAII).
 - **Shader Wrapper**: Use the `Shader` class (`include/shader.hpp`) for loading and setting uniforms.
 - **Math**: Use `glm` for all vector and matrix operations.
 
