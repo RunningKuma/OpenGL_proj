@@ -11,7 +11,7 @@
 
 #include "camera.hpp"
 #include "shader.hpp"
-#include "scene/city_scene.hpp"
+#include "city_scene.hpp"
 
 #include <array>
 #include <filesystem>

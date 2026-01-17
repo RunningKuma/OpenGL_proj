@@ -127,9 +127,10 @@ add_executable(LearningOpenGL
     src/main.cpp
     src/glad.c
     src/scene/city_scene.cpp
-    src/scene/simple_mesh.cpp
+    src/scene/mesh.cpp
     src/scene/skybox.cpp
     src/resources/texture.cpp
+    src/resources/model.cpp
     ${IMGUI_SOURCES}
     ${IMGUI_HEADERS}
 )

@@ -1,7 +1,7 @@
 #include "skybox.hpp"
 #include <array>
 #include <iostream>
-#include "../resources/texture.hpp"
+#include "texture.hpp"
 
 bool Skybox::init(const std::filesystem::path &texturePath)
 {
