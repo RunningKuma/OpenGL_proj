@@ -30,12 +30,14 @@ namespace
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     bool isPaused = false;
+    bool showControlPanel = false;  // P key control panel
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, CityScene &cityScene);
+void renderControlPanel(CityScene &cityScene, float fps);
 
 int main()
 {
@@ -108,8 +110,21 @@ int main()
         const float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        
+        // Calculate FPS
+        static float fpsTimer = 0.0f;
+        static float fps = 0.0f;
+        static int frameCount = 0;
+        fpsTimer += deltaTime;
+        frameCount++;
+        if (fpsTimer >= 0.5f)  // Update FPS every 0.5 seconds
+        {
+            fps = static_cast<float>(frameCount) / fpsTimer;
+            frameCount = 0;
+            fpsTimer = 0.0f;
+        }
 
-        processInput(window);
+        processInput(window, cityScene);
 
         // Start ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -133,6 +148,12 @@ int main()
 
         skyboxShader.use();
         cityScene.renderSkybox(skyboxShader, view, projection);
+
+        // Render Control Panel (P key)
+        if (showControlPanel)
+        {
+            renderControlPanel(cityScene, fps);
+        }
 
         // Render Pause UI
         if (isPaused)
@@ -174,8 +195,9 @@ int main()
     return 0;
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, CityScene &cityScene)
 {
+    // ESC key for pause
     static bool escPressedLastFrame = false;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -199,6 +221,30 @@ void processInput(GLFWwindow *window)
         escPressedLastFrame = false;
     }
 
+    // P key for control panel
+    static bool pPressedLastFrame = false;
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+    {
+        if (!pPressedLastFrame)
+        {
+            showControlPanel = !showControlPanel;
+            if (showControlPanel)
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            else
+            {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                firstMouse = true;
+            }
+        }
+        pPressedLastFrame = true;
+    }
+    else
+    {
+        pPressedLastFrame = false;
+    }
+
     if (isPaused)
     {
         // Resume on click
@@ -211,6 +257,7 @@ void processInput(GLFWwindow *window)
         return; // Skip camera controls if paused
     }
 
+    // Keyboard movement still works when control panel is shown
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -224,16 +271,19 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera.ProcessKeyboard(DOWN, deltaTime);
 
-    // Arrow keys nudge view angles for quick testing without mouse.
-    const float rotationSpeed = 40.0f * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        camera.ProcessMouseMovement(0.0f, rotationSpeed);
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        camera.ProcessMouseMovement(0.0f, -rotationSpeed);
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        camera.ProcessMouseMovement(-rotationSpeed, 0.0f);
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        camera.ProcessMouseMovement(rotationSpeed, 0.0f);
+    // Arrow keys nudge view angles (only when control panel is not shown)
+    if (!showControlPanel)
+    {
+        const float rotationSpeed = 40.0f * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+            camera.ProcessMouseMovement(0.0f, rotationSpeed);
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+            camera.ProcessMouseMovement(0.0f, -rotationSpeed);
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+            camera.ProcessMouseMovement(-rotationSpeed, 0.0f);
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+            camera.ProcessMouseMovement(rotationSpeed, 0.0f);
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow * /*window*/, int width, int height)
@@ -243,7 +293,7 @@ void framebuffer_size_callback(GLFWwindow * /*window*/, int width, int height)
 
 void mouse_callback(GLFWwindow * /*window*/, double xpos, double ypos)
 {
-    if (isPaused) return;
+    if (isPaused || showControlPanel) return;  // No mouse look when panel is shown
 
     if (firstMouse)
     {
@@ -263,4 +313,112 @@ void mouse_callback(GLFWwindow * /*window*/, double xpos, double ypos)
 void scroll_callback(GLFWwindow * /*window*/, double /*xoffset*/, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+void renderControlPanel(CityScene &cityScene, float fps)
+{
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(350, 400), ImGuiCond_FirstUseEver);
+    
+    ImGui::Begin("Control Panel (P to toggle)", &showControlPanel);
+    
+    // Performance section
+    ImGui::Text("Performance");
+    ImGui::Separator();
+    ImGui::Text("FPS: %.1f", fps);
+    ImGui::Text("Frame Time: %.3f ms", 1000.0f / fps);
+    
+    ImGui::Spacing();
+    
+    // Camera position section
+    ImGui::Text("Camera Position");
+    ImGui::Separator();
+    glm::vec3 camPos = camera.Position;
+    ImGui::Text("X: %.2f  Y: %.2f  Z: %.2f", camPos.x, camPos.y, camPos.z);
+    ImGui::Text("Yaw: %.1f  Pitch: %.1f", camera.Yaw, camera.Pitch);
+    
+    ImGui::Spacing();
+    
+    // Moonlight section - Arc trajectory control
+    ImGui::Text("Moon Light (Arc Trajectory)");
+    ImGui::Separator();
+    
+    float arcAngle = cityScene.getMoonArcAngle();
+    if (ImGui::SliderFloat("Arc Angle", &arcAngle, 0.0f, 180.0f, "%.1f deg"))
+    {
+        cityScene.setMoonArcAngle(arcAngle);
+    }
+    ImGui::Text("  0=East horizon, 90=Zenith, 180=West");
+    
+    float orbitRadius = cityScene.getMoonOrbitRadius();
+    if (ImGui::SliderFloat("Orbit Radius", &orbitRadius, 50.0f, 200.0f, "%.0f"))
+    {
+        cityScene.setMoonOrbitRadius(orbitRadius);
+    }
+    
+    float intensity = cityScene.getMoonIntensity();
+    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 3.0f, "%.2f"))
+    {
+        cityScene.setMoonIntensity(intensity);
+    }
+    
+    // Display computed moon position
+    glm::vec3 moonPos = cityScene.getMoonPosition();
+    ImGui::Text("Moon Position:");
+    ImGui::Text("  X: %.1f  Y: %.1f  Z: %.1f", moonPos.x, moonPos.y, moonPos.z);
+    
+    ImGui::Spacing();
+    
+    // Street Lamp Controls
+    ImGui::Text("Street Lamps (Warm Light)");
+    ImGui::Separator();
+    
+    // All on/off buttons
+    if (ImGui::Button("All On"))
+    {
+        cityScene.setAllStreetLampsEnabled(true);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("All Off"))
+    {
+        cityScene.setAllStreetLampsEnabled(false);
+    }
+    
+    // Individual lamp toggles (2 columns: Left side and Right side)
+    ImGui::Text("Left Side:");
+    for (int i = 0; i < 4; i++)
+    {
+        bool enabled = cityScene.isStreetLampEnabled(i);
+        char label[32];
+        snprintf(label, sizeof(label), "Lamp L%d", i + 1);
+        if (ImGui::Checkbox(label, &enabled))
+        {
+            cityScene.setStreetLampEnabled(i, enabled);
+        }
+        if (i < 3) ImGui::SameLine();
+    }
+    
+    ImGui::Text("Right Side:");
+    for (int i = 4; i < 8; i++)
+    {
+        bool enabled = cityScene.isStreetLampEnabled(i);
+        char label[32];
+        snprintf(label, sizeof(label), "Lamp R%d", i - 3);
+        if (ImGui::Checkbox(label, &enabled))
+        {
+            cityScene.setStreetLampEnabled(i, enabled);
+        }
+        if (i < 7) ImGui::SameLine();
+    }
+    
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Text("Controls:");
+    ImGui::BulletText("WASD - Move");
+    ImGui::BulletText("Space/Shift - Up/Down");
+    ImGui::BulletText("Mouse - Look around");
+    ImGui::BulletText("P - Toggle this panel");
+    ImGui::BulletText("ESC - Pause");
+    
+    ImGui::End();
 }
