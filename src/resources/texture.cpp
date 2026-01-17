@@ -36,6 +36,24 @@ unsigned int loadTexture2D(const std::filesystem::path &path)
     return texId;
 }
 
+unsigned int createTextureFromData(int width, int height, const unsigned char *data)
+{
+    unsigned int texId = 0;
+    glGenTextures(1, &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    // No mipmaps needed for a palette texture usually, and small size
+
+    return texId;
+}
+
 unsigned int loadSkyboxTexture(const std::filesystem::path &path)
 {
     unsigned int texId = 0;

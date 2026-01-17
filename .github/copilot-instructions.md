@@ -11,9 +11,11 @@ This project is a C++17 OpenGL application using CMake. It renders a 3D city sce
 ### Directory Structure & Separation of Concerns
 - **`src/`**: Contains application logic and scene implementations.
     - **`main.cpp`**: Handles GLFW initialization, input loop, and main render loop. Avoid adding heavy scene logic here.
-    - **`resources/`**: Utility implementations (e.g., proper texture loading wrappers in `texture.hpp/cpp`).
+    - **`resources/`**: Utility implementations.
+        - **`texture.hpp/cpp`**: Texture loading wrappers (STB Image).
+        - **`model_loader.hpp`**: Lightweight OBJ model loader with MTL color support.
     - **`scene/`**: Contains scene logic and components.
-        - **`CityScene`**: High-level scene composition (lights, camera, object instantiation).
+        - **`CityScene`**: High-level scene composition. Uses `SceneModel` struct to manage imported meshes.
         - **`SimpleMesh`**: Reusable class for managing geometry (VAOs/VBOs) and layout. Use this for adding new objects.
         - **`Skybox`**: Encapsulates skybox rendering logic.
 - **`include/`**: Reusable utility classes (e.g., `Shader`, `Camera`).
@@ -21,8 +23,13 @@ This project is a C++17 OpenGL application using CMake. It renders a 3D city sce
 - **`resource/`**: Assets like textures and HDRIs.
 
 ### Resource Loading Pattern
-- **Texture Loading**: Use `src/resources/texture.hpp`. It wraps `stb_image` and handles OpenGL texture parameters and mipmaps.
-    - **Critical**: `STB_IMAGE_IMPLEMENTATION` is defined in `src/resources/texture.cpp`. **DO NOT** define it again in any other file to avoid linker errors.
+- **Texture Loading**: Use `src/resources/texture.hpp`.
+    - `loadTexture2D`: Loads standard image files.
+    - `createTextureFromData`: Creates textures from raw byte data (e.g., generated palettes).
+    - **Critical**: `STB_IMAGE_IMPLEMENTATION` is defined in `src/resources/texture.cpp`.
+- **Model Loading**: Use `src/resources/model_loader.hpp`.
+    - `ModelLoader::loadOBJ(path)`: Returns vertex data and generated texture data from MTL colors.
+    - Use `CityScene::loadModel(path)` helper to create a `SceneModel` (Mesh + Texture) in one step.
 - **Path Resolution**: Use `std::filesystem::path` for all file I/O.
 - **Macros**: Do not hardcode absolute paths. Use CMake-injected preprocessor definitions:
     - `SHADER_DIR`: Absolute path to `shader/` directory.

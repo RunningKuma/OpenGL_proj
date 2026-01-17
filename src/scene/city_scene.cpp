@@ -11,52 +11,68 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "../resources/texture.hpp"
+#include "../resources/model_loader.hpp"
+
+CityScene::SceneModel CityScene::loadModel(const std::filesystem::path &path)
+{
+    SceneModel model;
+    auto data = ModelLoader::loadOBJ(path.string());
+    if (data.success)
+    {
+        model.mesh = std::make_unique<SimpleMesh>(data.vertices, std::vector<int>{3, 3, 2});
+        if (!data.textureData.empty())
+        {
+            model.textureId = createTextureFromData(data.texWidth, data.texHeight, data.textureData.data());
+        }
+    }
+    return model;
+}
 
 bool CityScene::init()
 {
     const std::vector<float> cubeVertices = {
-        // positions          // texcoords
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        // positions          // normals           // texcoords
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
 
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 
-        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
 
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f};
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f};
 
     // Road plane: Width 10 (-5 to 5), Length 100 (-50 to 50).
     const std::vector<float> roadVertices = {
@@ -167,15 +183,19 @@ bool CityScene::init()
     };
 
     // Layouts
-    // Cube: Pos(3), Tex(2)
-    cubeMesh = std::make_unique<SimpleMesh>(cubeVertices, std::vector<int>{3, 2});
+    // Cube: Pos(3), Norm(3), Tex(2) (Updated to include normals)
+    cubeMesh = std::make_unique<SimpleMesh>(cubeVertices, std::vector<int>{3, 3, 2});
     // Road/Pave: Pos(3), Norm(3), Tex(2)
     roadMesh = std::make_unique<SimpleMesh>(roadVertices, std::vector<int>{3, 3, 2});
     paveMesh = std::make_unique<SimpleMesh>(paveVertices, std::vector<int>{3, 3, 2});
 
     const std::filesystem::path texRoot = std::filesystem::path(TEXTURE_DIR);
 
+    // Load building using the helper
+    buildingCTF = loadModel(texRoot / "source-Guangzhou CTF Finance Centre" / "tinker.obj");
+
     cubeTexture = loadTexture2D(texRoot / "diffuseMap.png");
+    cubeSpecularTexture = loadTexture2D(texRoot / "specularMap.png");
     roadTexture = loadTexture2D(texRoot / "Road007_1K-PNG" / "Road007_1K-PNG_Color.png");
     paveTexture = loadTexture2D(texRoot / "PavingStones144_1K-PNG" / "PavingStones144_1K-PNG_Color.png");
 
@@ -198,8 +218,12 @@ void CityScene::renderScene(Shader &shader, const glm::mat4 &view, const glm::ma
 {
     shader.use();
     shader.setInt("material.diffuse", 0);
-    shader.setInt("material.specular", 0);
+    shader.setInt("material.specular", 1);
     shader.setFloat("material.shininess", 32.0f);
+
+    // Ensure specular map is unbound for objects that don't have one
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     // Directional light
     shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
@@ -222,6 +246,9 @@ void CityScene::renderScene(Shader &shader, const glm::mat4 &view, const glm::ma
     roadMesh->draw(shader, roadTexture, model);
 
     // Draw Cubes
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, cubeSpecularTexture);
+
     // Cube 1
     model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f));
     cubeMesh->draw(shader, cubeTexture, model);
@@ -235,6 +262,21 @@ void CityScene::renderScene(Shader &shader, const glm::mat4 &view, const glm::ma
     model = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.5f, 8.0f));
     model = glm::rotate(model, glm::radians(60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     cubeMesh->draw(shader, cubeTexture, model);
+
+    // Draw Building
+    if (buildingCTF.mesh)
+    {
+        // Reset specular to empty/default if needed, or use same as cubes
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Move to the side of the road (Road is width 10, so X from -5 to 5)
+        // Let's put it at X = 15
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(15.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.1f));                                    // Scale it down
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Rotate -90 degrees around X to fix orientation (Z-up to Y-up)
+        buildingCTF.mesh->draw(shader, buildingCTF.textureId != 0 ? buildingCTF.textureId : cubeTexture, model);
+    }
 }
 
 void CityScene::renderSkybox(Shader &skyboxShader, const glm::mat4 &view, const glm::mat4 &projection) const
@@ -253,8 +295,10 @@ void CityScene::shutdown()
     // Meshes (unique_ptr) clean up themselves via destructors
 
     glDeleteTextures(1, &cubeTexture);
+    glDeleteTextures(1, &cubeSpecularTexture);
     glDeleteTextures(1, &roadTexture);
     glDeleteTextures(1, &paveTexture);
+    glDeleteTextures(1, &buildingCTF.textureId);
 }
 
 // NOLINTEND(readability-magic-numbers)
