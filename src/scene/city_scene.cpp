@@ -46,11 +46,40 @@ void CityScene::renderScene(Shader &shader, const glm::mat4 &view, const glm::ma
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Directional light
-    shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
-    shader.setVec3("light.ambient", 0.4f, 0.4f, 0.45f);
-    shader.setVec3("light.diffuse", 0.7f, 0.7f, 0.75f);
-    shader.setVec3("light.specular", 0.5f, 0.5f, 0.5f);
+    // Directional light (Night/Moonlight)
+    shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+    shader.setVec3("dirLight.ambient", 0.03f, 0.03f, 0.06f);   // Very dark blueish ambient for night
+    shader.setVec3("dirLight.diffuse", 0.1f, 0.1f, 0.2f);      // Dim blueish moonlight
+    shader.setVec3("dirLight.specular", 0.2f, 0.2f, 0.2f);     // Reduced specular
+
+    // Street lamp point lights (warm orange/yellow color)
+    // Positions along the main road in model space (scaled by 0.2)
+    const std::array<glm::vec3, 8> streetLampPositions = {{
+        glm::vec3(-8.0f, 3.5f, 15.0f),
+        glm::vec3(-8.0f, 3.5f, 5.0f),
+        glm::vec3(-8.0f, 3.5f, -5.0f),
+        glm::vec3(-8.0f, 3.5f, -15.0f),
+        glm::vec3(8.0f, 3.5f, 15.0f),
+        glm::vec3(8.0f, 3.5f, 5.0f),
+        glm::vec3(8.0f, 3.5f, -5.0f),
+        glm::vec3(8.0f, 3.5f, -15.0f),
+    }};
+
+    shader.setInt("numPointLights", static_cast<int>(streetLampPositions.size()));
+
+    for (size_t i = 0; i < streetLampPositions.size(); ++i)
+    {
+        std::string prefix = "pointLights[" + std::to_string(i) + "]";
+        shader.setVec3(prefix + ".position", streetLampPositions[i]);
+        // Warm street lamp color (orange-yellow)
+        shader.setVec3(prefix + ".ambient", 0.1f, 0.07f, 0.02f);
+        shader.setVec3(prefix + ".diffuse", 1.0f, 0.7f, 0.3f);    // Warm orange
+        shader.setVec3(prefix + ".specular", 1.0f, 0.8f, 0.5f);
+        // Attenuation for ~50 unit range
+        shader.setFloat(prefix + ".constant", 1.0f);
+        shader.setFloat(prefix + ".linear", 0.09f);
+        shader.setFloat(prefix + ".quadratic", 0.032f);
+    }
 
     glm::mat4 invView = glm::inverse(view);
     shader.setVec3("viewPos", glm::vec3(invView[3]));

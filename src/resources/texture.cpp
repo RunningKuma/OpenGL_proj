@@ -65,7 +65,7 @@ unsigned int loadSkyboxTexture(const std::filesystem::path &path)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
     int width = 0;
     int height = 0;
     int channels = 0;
