@@ -117,6 +117,22 @@ void CityScene::renderScene(Shader &shader, const glm::mat4 &view, const glm::ma
         lightIndex++;
     }
 
+    // Flashlight (spotlight from camera)
+    shader.setBool("flashlightOn", flashlightOn);
+    if (flashlightOn)
+    {
+        shader.setVec3("spotLight.position", flashlightPosition);
+        shader.setVec3("spotLight.direction", flashlightDirection);
+        shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(20.0f)));      // Inner cone: larger for wider bright area
+        shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(35.0f))); // Outer cone: much larger for soft falloff
+        shader.setVec3("spotLight.ambient", 0.05f, 0.05f, 0.05f);
+        shader.setVec3("spotLight.diffuse", 1.0f, 1.0f, 0.9f);   // Warm white
+        shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+        shader.setFloat("spotLight.constant", 1.0f);
+        shader.setFloat("spotLight.linear", 0.07f);   // Reduced for longer range
+        shader.setFloat("spotLight.quadratic", 0.017f);
+    }
+
     glm::mat4 invView = glm::inverse(view);
     shader.setVec3("viewPos", glm::vec3(invView[3]));
 

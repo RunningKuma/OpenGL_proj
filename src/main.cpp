@@ -143,6 +143,9 @@ int main()
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), aspect, 0.1f, 200.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
+        // Update flashlight position/direction from camera
+        cityScene.setFlashlightParams(camera.Position, camera.Front);
+
         shader.use();
         cityScene.renderScene(shader, view, projection);
 
@@ -243,6 +246,21 @@ void processInput(GLFWwindow *window, CityScene &cityScene)
     else
     {
         pPressedLastFrame = false;
+    }
+
+    // G key for flashlight toggle
+    static bool gPressedLastFrame = false;
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+    {
+        if (!gPressedLastFrame)
+        {
+            cityScene.toggleFlashlight();
+        }
+        gPressedLastFrame = true;
+    }
+    else
+    {
+        gPressedLastFrame = false;
     }
 
     if (isPaused)
@@ -412,11 +430,24 @@ void renderControlPanel(CityScene &cityScene, float fps)
     }
     
     ImGui::Spacing();
+    
+    // Flashlight section
+    ImGui::Text("Flashlight");
+    ImGui::Separator();
+    bool flashlightOn = cityScene.isFlashlightOn();
+    if (ImGui::Checkbox("Flashlight On (G)", &flashlightOn))
+    {
+        cityScene.setFlashlightOn(flashlightOn);
+    }
+    ImGui::Text("Status: %s", flashlightOn ? "ON" : "OFF");
+    
+    ImGui::Spacing();
     ImGui::Separator();
     ImGui::Text("Controls:");
     ImGui::BulletText("WASD - Move");
     ImGui::BulletText("Space/Shift - Up/Down");
     ImGui::BulletText("Mouse - Look around");
+    ImGui::BulletText("G - Toggle flashlight");
     ImGui::BulletText("P - Toggle this panel");
     ImGui::BulletText("ESC - Pause");
     

@@ -37,6 +37,19 @@ public:
     bool isStreetLampEnabled(int index) const { return (index >= 0 && index < 8) ? streetLampEnabled[index] : false; }
     void setStreetLampEnabled(int index, bool enabled) { if (index >= 0 && index < 8) streetLampEnabled[index] = enabled; }
     void setAllStreetLampsEnabled(bool enabled) { for (int i = 0; i < 8; i++) streetLampEnabled[i] = enabled; }
+    
+    // Flashlight controls
+    bool isFlashlightOn() const { return flashlightOn; }
+    void setFlashlightOn(bool on) { flashlightOn = on; }
+    void toggleFlashlight() { flashlightOn = !flashlightOn; }
+    
+    // Set flashlight position and direction (called from main with camera data)
+    void setFlashlightParams(const glm::vec3& position, const glm::vec3& direction) {
+        flashlightPosition = position;
+        flashlightDirection = direction;
+    }
+    glm::vec3 getFlashlightPosition() const { return flashlightPosition; }
+    glm::vec3 getFlashlightDirection() const { return flashlightDirection; }
 
 private:
     std::unique_ptr<Model> cityModel;  // CITY glTF model
@@ -52,4 +65,9 @@ private:
     
     // Street lamp on/off states (8 lamps)
     bool streetLampEnabled[8] = {true, true, true, true, true, true, true, true};
+    
+    // Flashlight parameters
+    bool flashlightOn = false;
+    glm::vec3 flashlightPosition = glm::vec3(0.0f);
+    glm::vec3 flashlightDirection = glm::vec3(0.0f, 0.0f, -1.0f);
 };
